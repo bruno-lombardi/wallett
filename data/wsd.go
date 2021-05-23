@@ -36,11 +36,11 @@ func GetWSD() *WSD {
 	return wsd
 }
 
-func (wsd *WSD) PersistWSD() {
+func (wsd *WSD) PersistWSD() (err error) {
 	if err := persistence.WriteAndEncodeFile("wsd.dat", &wsd); err != nil {
-		fmt.Println("We could not save wallets...")
 		fmt.Println(err)
+		return err
 	} else {
-		fmt.Println("Success saving wallett data!")
+		return nil
 	}
 }

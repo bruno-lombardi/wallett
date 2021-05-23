@@ -1,9 +1,9 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 	"wallett/data"
+	"wallett/generators"
 	"wallett/models"
 
 	"github.com/labstack/echo"
@@ -16,6 +16,13 @@ type GetUserDTO struct {
 type ListUsersDTO struct {
 	Page  int `query:"page" validate:"gte=1"`
 	Limit int `query:"limit" validate:"gte=1,lte=20"`
+}
+
+type CreateUserDTO struct {
+	Email                string `json:"email" validate:"email,required"`
+	Name                 string `json:"name" validate:"required,max=100,min=2"`
+	Password             string `json:"password" validate:"required,max=64,min=6"`
+	PasswordConfirmation string `json:"password_confirmation" validate:"required,max=64,min=6,eqcsfield=Password"`
 }
 
 func HandleGetUserByID(c echo.Context) (err error) {
@@ -46,7 +53,6 @@ func HandleListUsers(c echo.Context) (err error) {
 	if err = c.Bind(listUsersDto); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	fmt.Printf("%v\n", listUsersDto)
 	if err = c.Validate(listUsersDto); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -73,6 +79,29 @@ func HandleListUsers(c echo.Context) (err error) {
 		TotalPages: sliceSize,
 		PerPage:    listUsersDto.Limit,
 		Page:       listUsersDto.Page,
+		Count:      len(*wsd.Users),
 		Data:       data,
 	})
+}
+
+func CreateUser(c echo.Context) (err error) {
+	createUserDto := &CreateUserDTO{}
+	if err = c.Bind(createUserDto); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if err = c.Validate(createUserDto); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	wsd := data.GetWSD()
+	user := &models.User{
+		ID:       generators.ID("u"),
+		Email:    createUserDto.Email,
+		Name:     createUserDto.Name,
+		Password: createUserDto.Password,
+	}
+	*wsd.Users = append(*wsd.Users, *user)
+	if err = wsd.PersistWSD(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "An error ocurred while saving this user.")
+	}
+	return c.JSON(http.StatusCreated, user)
 }

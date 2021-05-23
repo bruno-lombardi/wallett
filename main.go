@@ -39,7 +39,7 @@ func main() {
 	api := e.Group("/api/v1")
 	api.GET("/users", controllers.HandleListUsers)
 	api.GET("/users/:id", controllers.HandleGetUserByID)
-	// api.POST("/users")
+	api.POST("/users", controllers.CreateUser)
 	// api.PUT("/users/:id")
 	// api.DELETE("/users/:id")
 
