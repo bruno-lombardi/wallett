@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"wallett/data"
 	"wallett/models"
@@ -18,14 +19,15 @@ type ListUsersDTO struct {
 }
 
 func HandleGetUserByID(c echo.Context) (err error) {
-	getUserDto := &GetUserDTO{}
-	if err = c.Bind(getUserDto); err != nil {
-		return err
+	id := c.Param("id")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+
 	wsd := data.GetWSD()
 	foundUser := &models.User{}
 	for _, user := range *wsd.Users {
-		if user.ID == getUserDto.ID {
+		if user.ID == id {
 			foundUser = &user
 			break
 		}
@@ -44,6 +46,7 @@ func HandleListUsers(c echo.Context) (err error) {
 	if err = c.Bind(listUsersDto); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+	fmt.Printf("%v\n", listUsersDto)
 	if err = c.Validate(listUsersDto); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
