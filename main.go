@@ -39,8 +39,8 @@ func main() {
 	api := e.Group("/api/v1")
 	api.GET("/users", controllers.HandleListUsers)
 	api.GET("/users/:id", controllers.HandleGetUserByID)
-	api.POST("/users", controllers.CreateUser)
-	// api.PUT("/users/:id")
+	api.POST("/users", controllers.HandleCreateUser)
+	api.PUT("/users/:id", controllers.HandleUpdateUser)
 	// api.DELETE("/users/:id")
 
 	// api.GET("/wallets")

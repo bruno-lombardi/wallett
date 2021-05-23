@@ -25,6 +25,15 @@ type CreateUserDTO struct {
 	PasswordConfirmation string `json:"password_confirmation" validate:"required,max=64,min=6,eqcsfield=Password"`
 }
 
+type UpdateUserDTO struct {
+	ID                      string `param:"id" validate:"required"`
+	Email                   string `json:"email" validate:"email,required"`
+	Name                    string `json:"name" validate:"required,max=100,min=2"`
+	CurrentPassword         string `json:"current_password" validate:"required,max=64,min=6"`
+	NewPassword             string `json:"new_password" validate:"required,max=64,min=6"`
+	NewPasswordConfirmation string `json:"new_password_confirmation" validate:"required,max=64,min=6,eqcsfield=NewPassword"`
+}
+
 func HandleGetUserByID(c echo.Context) (err error) {
 	id := c.Param("id")
 	if err != nil {
@@ -84,7 +93,7 @@ func HandleListUsers(c echo.Context) (err error) {
 	})
 }
 
-func CreateUser(c echo.Context) (err error) {
+func HandleCreateUser(c echo.Context) (err error) {
 	createUserDto := &CreateUserDTO{}
 	if err = c.Bind(createUserDto); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -104,4 +113,42 @@ func CreateUser(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusInternalServerError, "An error ocurred while saving this user.")
 	}
 	return c.JSON(http.StatusCreated, user)
+}
+
+func HandleUpdateUser(c echo.Context) (err error) {
+	updateUserDto := &UpdateUserDTO{}
+	updateUserDto.ID = c.Param("id")
+	if err = c.Bind(updateUserDto); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if err = c.Validate(updateUserDto); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	wsd := data.GetWSD()
+	foundUser := &models.User{}
+	var idx int
+	for i, user := range *wsd.Users {
+		if user.ID == updateUserDto.ID {
+			foundUser = &user
+			idx = i
+			break
+		}
+	}
+	if foundUser.ID == "" {
+		return echo.NewHTTPError(http.StatusNotFound, "An user with that id was not found.")
+	}
+	if foundUser.Password != updateUserDto.CurrentPassword {
+		return echo.NewHTTPError(http.StatusUnauthorized, "The password provided for this user is not valid.")
+	}
+
+	foundUser.Email = updateUserDto.Email
+	foundUser.Name = updateUserDto.Name
+	foundUser.Password = updateUserDto.NewPassword
+
+	(*wsd.Users)[idx] = *foundUser
+
+	if err = wsd.PersistWSD(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "An error ocurred while saving this user.")
+	}
+	return c.JSON(http.StatusOK, foundUser)
 }
