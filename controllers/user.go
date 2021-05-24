@@ -9,10 +9,6 @@ import (
 	"github.com/labstack/echo"
 )
 
-type GetUserDTO struct {
-	ID string `param:"id"`
-}
-
 type ListUsersDTO struct {
 	Page  int `query:"page" validate:"gte=1"`
 	Limit int `query:"limit" validate:"gte=1,lte=20"`
@@ -150,5 +146,35 @@ func HandleUpdateUser(c echo.Context) (err error) {
 	if err = wsd.PersistWSD(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "An error ocurred while saving this user.")
 	}
+	return c.JSON(http.StatusOK, foundUser)
+}
+
+func HandleDeleteUserByID(c echo.Context) (err error) {
+	id := c.Param("id")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	wsd := data.GetWSD()
+	foundUser := &models.User{}
+	var idx int
+	for i, user := range *wsd.Users {
+		if user.ID == id {
+			foundUser = &user
+			idx = i
+			break
+		}
+	}
+	if foundUser.ID == "" {
+		return echo.NewHTTPError(http.StatusNotFound, "An user with that id was not found.")
+	}
+
+	var users = *wsd.Users
+	*wsd.Users = append(users[:idx], users[idx+1:]...)
+
+	if err = wsd.PersistWSD(); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "An error ocurred while deleting this user.")
+	}
+
 	return c.JSON(http.StatusOK, foundUser)
 }

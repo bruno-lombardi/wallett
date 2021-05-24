@@ -41,7 +41,7 @@ func main() {
 	api.GET("/users/:id", controllers.HandleGetUserByID)
 	api.POST("/users", controllers.HandleCreateUser)
 	api.PUT("/users/:id", controllers.HandleUpdateUser)
-	// api.DELETE("/users/:id")
+	api.DELETE("/users/:id", controllers.HandleDeleteUserByID)
 
 	// api.GET("/wallets")
 	// api.GET("/wallets/:id")
