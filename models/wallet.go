@@ -8,6 +8,14 @@ type Wallet struct {
 	Transactions []Transaction `json:"transactions"`
 }
 
+type PaginatedWalletResultDTO struct {
+	TotalPages int      `json:"total_pages"`
+	Count      int      `json:"count"`
+	PerPage    int      `json:"per_page"`
+	Page       int      `json:"page"`
+	Data       []Wallet `json:"data"`
+}
+
 func (w *Wallet) AddTransaction(t Transaction) {
 	t.PreviousBalance = w.Balance
 	w.Transactions = append(w.Transactions, t)
