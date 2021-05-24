@@ -2,29 +2,17 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"wallett/controllers"
+	"wallett/middlewares"
 
-	"github.com/go-playground/validator"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
 
-type GoPlaygroundValidator struct {
-	validator *validator.Validate
-}
-
-func (cv *GoPlaygroundValidator) Validate(i interface{}) error {
-	if err := cv.validator.Struct(i); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-	return nil
-}
-
 func main() {
 	// wsd := initWSD()
 	e := echo.New()
-	e.Validator = &GoPlaygroundValidator{validator: validator.New()}
+	e.Validator = middlewares.NewCustomValidator()
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
