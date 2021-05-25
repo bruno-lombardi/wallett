@@ -72,5 +72,19 @@ func NewCustomValidator() *CustomValidator {
 		return t
 	})
 
+	// Email
+	validate.RegisterTranslation("email", translator, func(ut ut.Translator) error {
+		return ut.Add("email", "O valor {0} é um email inválido", true)
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		value, ok := fe.Value().(string)
+		var t string
+
+		if !ok {
+			t, _ = ut.T("email", fe.Field())
+		}
+		t, _ = ut.T("email", value)
+		return t
+	})
+
 	return &CustomValidator{Validator: validate, Translator: translator}
 }

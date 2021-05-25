@@ -5,12 +5,7 @@ import (
 	"wallett/persistence"
 )
 
-type Persister interface {
-	Persist() error
-}
-
 type WSD struct {
-	Persister
 	Wallets         *[]Wallet
 	Users           *[]User
 	storageFilePath string
@@ -46,4 +41,15 @@ func (wsd *WSD) PersistWSD() (err error) {
 	} else {
 		return nil
 	}
+}
+
+func (wsd *WSD) ClearWSD() (err error) {
+	var wallets *[]Wallet = &[]Wallet{}
+	var users *[]User = &[]User{}
+
+	wsd.Users = users
+	wsd.Wallets = wallets
+
+	err = persistence.DeleteFile(wsd.storageFilePath)
+	return err
 }

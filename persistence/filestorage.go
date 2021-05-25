@@ -80,3 +80,7 @@ func WriteAndEncodeFile(path string, e interface{}) error {
 		return err
 	}
 }
+
+func DeleteFile(path string) error {
+	return os.Remove(path)
+}
