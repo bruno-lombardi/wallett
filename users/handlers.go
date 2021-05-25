@@ -1,4 +1,4 @@
-package controllers
+package users
 
 import (
 	"net/http"
@@ -8,6 +8,10 @@ import (
 
 	"github.com/labstack/echo"
 )
+
+type UserHandlers struct {
+	data *data.WSD
+}
 
 type ListUsersDTO struct {
 	Page  int `query:"page" validate:"gte=1"`
@@ -30,15 +34,29 @@ type UpdateUserDTO struct {
 	NewPasswordConfirmation string `json:"new_password_confirmation" validate:"required,max=64,min=6,eqcsfield=NewPassword"`
 }
 
-func HandleGetUserByID(c echo.Context) (err error) {
+func NewUserHandlers(data *data.WSD) *UserHandlers {
+	h := &UserHandlers{
+		data: data,
+	}
+	return h
+}
+
+func (h *UserHandlers) SetupRoutes(r *echo.Group) {
+	r.GET("/users", h.ListUsers)
+	r.GET("/users/:id", h.GetUserByID)
+	r.POST("/users", h.CreateUser)
+	r.PUT("/users/:id", h.UpdateUser)
+	r.DELETE("/users/:id", h.DeleteUserByID)
+}
+
+func (h *UserHandlers) GetUserByID(c echo.Context) (err error) {
 	id := c.Param("id")
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	wsd := data.GetWSD()
 	foundUser := &models.User{}
-	for _, user := range *wsd.Users {
+	for _, user := range *h.data.Users {
 		if user.ID == id {
 			foundUser = &user
 			break
@@ -50,7 +68,7 @@ func HandleGetUserByID(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, foundUser)
 }
 
-func HandleListUsers(c echo.Context) (err error) {
+func (h *UserHandlers) ListUsers(c echo.Context) (err error) {
 	listUsersDto := &ListUsersDTO{
 		Page:  1,
 		Limit: 10,
@@ -62,8 +80,7 @@ func HandleListUsers(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	wsd := data.GetWSD()
-	sliceSize := len(*wsd.Users) / listUsersDto.Limit
+	sliceSize := len(*h.data.Users) / listUsersDto.Limit
 	usersSlices := make([][]models.User, sliceSize)
 
 	for i := 0; i < sliceSize; i++ {
@@ -72,7 +89,7 @@ func HandleListUsers(c echo.Context) (err error) {
 		// i = 9, j = 90...99
 		for j := i * listUsersDto.Limit; j < (i*listUsersDto.Limit)+listUsersDto.Limit; j++ {
 			innerSliceIdx := j - (i * listUsersDto.Limit)
-			usersSlices[i][innerSliceIdx] = (*wsd.Users)[j]
+			usersSlices[i][innerSliceIdx] = (*h.data.Users)[j]
 		}
 	}
 	var data []models.User = []models.User{}
@@ -84,12 +101,12 @@ func HandleListUsers(c echo.Context) (err error) {
 		TotalPages: sliceSize,
 		PerPage:    listUsersDto.Limit,
 		Page:       listUsersDto.Page,
-		Count:      len(*wsd.Users),
+		Count:      len(*h.data.Users),
 		Data:       data,
 	})
 }
 
-func HandleCreateUser(c echo.Context) (err error) {
+func (h *UserHandlers) CreateUser(c echo.Context) (err error) {
 	createUserDto := &CreateUserDTO{}
 	if err = c.Bind(createUserDto); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -97,21 +114,20 @@ func HandleCreateUser(c echo.Context) (err error) {
 	if err = c.Validate(createUserDto); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	wsd := data.GetWSD()
 	user := &models.User{
 		ID:       generators.ID("u"),
 		Email:    createUserDto.Email,
 		Name:     createUserDto.Name,
 		Password: createUserDto.Password,
 	}
-	*wsd.Users = append(*wsd.Users, *user)
-	if err = wsd.PersistWSD(); err != nil {
+	*h.data.Users = append(*h.data.Users, *user)
+	if err = h.data.PersistWSD(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "An error ocurred while saving this user.")
 	}
 	return c.JSON(http.StatusCreated, user)
 }
 
-func HandleUpdateUser(c echo.Context) (err error) {
+func (h *UserHandlers) UpdateUser(c echo.Context) (err error) {
 	updateUserDto := &UpdateUserDTO{}
 	updateUserDto.ID = c.Param("id")
 	if err = c.Bind(updateUserDto); err != nil {
@@ -120,10 +136,9 @@ func HandleUpdateUser(c echo.Context) (err error) {
 	if err = c.Validate(updateUserDto); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	wsd := data.GetWSD()
 	foundUser := &models.User{}
 	var idx int
-	for i, user := range *wsd.Users {
+	for i, user := range *h.data.Users {
 		if user.ID == updateUserDto.ID {
 			foundUser = &user
 			idx = i
@@ -141,24 +156,23 @@ func HandleUpdateUser(c echo.Context) (err error) {
 	foundUser.Name = updateUserDto.Name
 	foundUser.Password = updateUserDto.NewPassword
 
-	(*wsd.Users)[idx] = *foundUser
+	(*h.data.Users)[idx] = *foundUser
 
-	if err = wsd.PersistWSD(); err != nil {
+	if err = h.data.PersistWSD(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "An error ocurred while saving this user.")
 	}
 	return c.JSON(http.StatusOK, foundUser)
 }
 
-func HandleDeleteUserByID(c echo.Context) (err error) {
+func (h *UserHandlers) DeleteUserByID(c echo.Context) (err error) {
 	id := c.Param("id")
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	wsd := data.GetWSD()
 	foundUser := &models.User{}
 	var idx int
-	for i, user := range *wsd.Users {
+	for i, user := range *h.data.Users {
 		if user.ID == id {
 			foundUser = &user
 			idx = i
@@ -169,10 +183,10 @@ func HandleDeleteUserByID(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusNotFound, "An user with that id was not found.")
 	}
 
-	var users = *wsd.Users
-	*wsd.Users = append(users[:idx], users[idx+1:]...)
+	var users = *h.data.Users
+	*h.data.Users = append(users[:idx], users[idx+1:]...)
 
-	if err = wsd.PersistWSD(); err != nil {
+	if err = h.data.PersistWSD(); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "An error ocurred while deleting this user.")
 	}
 

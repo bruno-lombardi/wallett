@@ -1,4 +1,4 @@
-package controllers
+package wallets
 
 import (
 	"net/http"
@@ -8,12 +8,37 @@ import (
 	"github.com/labstack/echo"
 )
 
+type WalletHandlers struct {
+	data *data.WSD
+}
+
 type ListWalletsDTO struct {
 	Page  int `query:"page" validate:"gte=1"`
 	Limit int `query:"limit" validate:"gte=1,lte=20"`
 }
 
-func HandleListWallets(c echo.Context) (err error) {
+func NewWalletHandlers(data *data.WSD) *WalletHandlers {
+	h := &WalletHandlers{
+		data: data,
+	}
+	return h
+}
+
+func (h *WalletHandlers) SetupRoutes(r *echo.Group) {
+	r.GET("/wallets", h.ListWallets)
+	r.GET("/wallets/:id", h.GetWalletByID)
+	// r.POST("/wallets")
+	// r.PUT("/wallets/:id")
+	// r.DELETE("/wallets/:id")
+
+	// r.GET("/wallets/:wallet_id/transactions")
+	// r.GET("/wallets/:wallet_id/transactions/:trx_id")
+	// r.POST("/wallets/:wallet_id/transactions")
+	// r.PUT("/wallets/:wallet_id/transactions/:trx_id")
+	// r.DELETE("/wallets/:wallet_id/transactions/:trx_id")
+}
+
+func (h *WalletHandlers) ListWallets(c echo.Context) (err error) {
 	listWalletsDto := &ListWalletsDTO{
 		Page:  1,
 		Limit: 10,
@@ -25,8 +50,7 @@ func HandleListWallets(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	wsd := data.GetWSD()
-	sliceSize := len(*wsd.Wallets) / listWalletsDto.Limit
+	sliceSize := len(*h.data.Wallets) / listWalletsDto.Limit
 	walletsSlices := make([][]models.Wallet, sliceSize)
 
 	for i := 0; i < sliceSize; i++ {
@@ -34,7 +58,7 @@ func HandleListWallets(c echo.Context) (err error) {
 
 		for j := i * listWalletsDto.Limit; j < (i*listWalletsDto.Limit)+listWalletsDto.Limit; j++ {
 			innerSliceIdx := j - (i * listWalletsDto.Limit)
-			walletsSlices[i][innerSliceIdx] = (*wsd.Wallets)[j]
+			walletsSlices[i][innerSliceIdx] = (*h.data.Wallets)[j]
 		}
 	}
 	var data []models.Wallet = []models.Wallet{}
@@ -46,20 +70,19 @@ func HandleListWallets(c echo.Context) (err error) {
 		TotalPages: sliceSize,
 		PerPage:    listWalletsDto.Limit,
 		Page:       listWalletsDto.Page,
-		Count:      len(*wsd.Wallets),
+		Count:      len(*h.data.Wallets),
 		Data:       data,
 	})
 }
 
-func HandleGetWalletByID(c echo.Context) (err error) {
+func (h *WalletHandlers) GetWalletByID(c echo.Context) (err error) {
 	id := c.Param("id")
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	wsd := data.GetWSD()
 	foundWallet := &models.Wallet{}
-	for _, wallet := range *wsd.Wallets {
+	for _, wallet := range *h.data.Wallets {
 		if wallet.ID == id {
 			foundWallet = &wallet
 			break

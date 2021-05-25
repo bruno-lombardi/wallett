@@ -5,25 +5,28 @@ import (
 	"wallett/persistence"
 )
 
-type Persistable interface {
+type Persister interface {
 	Persist() error
 }
 
 type WSD struct {
-	Persistable
-	Wallets *[]Wallet
-	Users   *[]User
+	Persister
+	Wallets         *[]Wallet
+	Users           *[]User
+	storageFilePath string
 }
 
-func GetWSD() *WSD {
-	var wsd *WSD = &WSD{}
+func NewWSD(storageFilePath string) *WSD {
+	var wsd *WSD = &WSD{
+		storageFilePath: storageFilePath,
+	}
 	var wallets *[]Wallet = &[]Wallet{}
 	var users *[]User = &[]User{}
 
 	wsd.Users = users
 	wsd.Wallets = wallets
 
-	if err := persistence.ReadAndDecodeFile("wsd.dat", &wsd); err != nil {
+	if err := persistence.ReadAndDecodeFile(storageFilePath, &wsd); err != nil {
 		fmt.Println("--- Wallett ---")
 		fmt.Println("No wallett data found... initializing wallett")
 		fmt.Println(err)
@@ -37,7 +40,7 @@ func GetWSD() *WSD {
 }
 
 func (wsd *WSD) PersistWSD() (err error) {
-	if err := persistence.WriteAndEncodeFile("wsd.dat", &wsd); err != nil {
+	if err := persistence.WriteAndEncodeFile(wsd.storageFilePath, &wsd); err != nil {
 		fmt.Println(err)
 		return err
 	} else {

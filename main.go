@@ -2,15 +2,17 @@ package main
 
 import (
 	"fmt"
-	"wallett/controllers"
+	"wallett/data"
 	"wallett/middlewares"
+	"wallett/users"
+	"wallett/wallets"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
 
 func main() {
-	// wsd := initWSD()
+	data := data.NewWSD("wsd.dat")
 	e := echo.New()
 	e.Validator = middlewares.NewCustomValidator()
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -25,23 +27,11 @@ func main() {
 		e.DefaultHTTPErrorHandler(err, c)
 	}
 	api := e.Group("/api/v1")
-	api.GET("/users", controllers.HandleListUsers)
-	api.GET("/users/:id", controllers.HandleGetUserByID)
-	api.POST("/users", controllers.HandleCreateUser)
-	api.PUT("/users/:id", controllers.HandleUpdateUser)
-	api.DELETE("/users/:id", controllers.HandleDeleteUserByID)
+	userHandlers := users.NewUserHandlers(data)
+	userHandlers.SetupRoutes(api)
 
-	api.GET("/wallets", controllers.HandleListWallets)
-	api.GET("/wallets/:id", controllers.HandleGetWalletByID)
-	// api.POST("/wallets")
-	// api.PUT("/wallets/:id")
-	// api.DELETE("/wallets/:id")
+	walletHandlers := wallets.NewWalletHandlers(data)
+	walletHandlers.SetupRoutes(api)
 
-	// e.GET("/wallets/:wallet_id/transactions")
-	// e.GET("/wallets/:wallet_id/transactions/:trx_id")
-	// e.POST("/wallets/:wallet_id/transactions")
-	// e.PUT("/wallets/:wallet_id/transactions/:trx_id")
-	// e.DELETE("/wallets/:wallet_id/transactions/:trx_id")
 	e.Logger.Fatal(e.Start(":3333"))
-
 }
