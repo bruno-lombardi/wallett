@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"wallett/data"
+	"wallett/main/handlers"
 	"wallett/middlewares"
 	"wallett/users"
-	"wallett/wallets"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -30,8 +30,8 @@ func main() {
 	userHandlers := users.NewUserHandlers(data)
 	userHandlers.SetupRoutes(api)
 
-	walletHandlers := wallets.NewWalletHandlers(data)
-	walletHandlers.SetupRoutes(api)
+	walletHandlers := handlers.NewWalletHandlers(data)
+	walletHandlers.SetupHandlers(api)
 
 	e.Logger.Fatal(e.Start(":3333"))
 }
