@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 	"wallett/data"
-	"wallett/generators"
-	"wallett/models"
+	"wallett/domain/models"
+	"wallett/infra/generators"
 	"wallett/presentation/protocols"
 )
 

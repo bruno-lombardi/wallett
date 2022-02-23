@@ -1,4 +1,4 @@
-package users
+package handlers
 
 import (
 	"bytes"
@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 	"wallett/data"
-	"wallett/middlewares"
-	"wallett/models"
+	"wallett/domain/models"
+	"wallett/presentation/helpers"
 	"wallett/test"
 
 	"github.com/labstack/echo"
@@ -156,7 +156,7 @@ func TestUserHandlers(t *testing.T) {
 		t.Run(testCase.Name, func(t *testing.T) {
 			// Setup
 			e := echo.New()
-			e.Validator = middlewares.NewCustomValidator()
+			e.Validator = helpers.NewCustomValidator()
 			api := e.Group("/api/v1")
 			h := NewUserHandlers(mockData)
 			h.SetupRoutes(api)

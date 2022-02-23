@@ -2,7 +2,7 @@ package data
 
 import (
 	"fmt"
-	"wallett/persistence"
+	"wallett/infra/persistence"
 )
 
 type WSD struct {

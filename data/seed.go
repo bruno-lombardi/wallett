@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
-	"wallett/generators"
-	"wallett/models"
+	"wallett/domain/models"
+	"wallett/infra/generators"
 )
 
 type Wallet = models.Wallet

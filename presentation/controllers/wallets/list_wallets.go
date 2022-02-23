@@ -3,7 +3,7 @@ package wallets
 import (
 	"net/http"
 	"wallett/data"
-	"wallett/models"
+	"wallett/domain/models"
 	"wallett/presentation/protocols"
 )
 

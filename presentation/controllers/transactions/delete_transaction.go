@@ -1,10 +1,10 @@
-package wallets
+package transactions
 
 import (
 	"errors"
 	"net/http"
 	"wallett/data"
-	"wallett/models"
+	"wallett/domain/models"
 	"wallett/presentation/protocols"
 )
 

@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"wallett/data"
 	"wallett/main/handlers"
-	"wallett/middlewares"
-	"wallett/users"
+	"wallett/presentation/helpers"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -14,7 +13,7 @@ import (
 func main() {
 	data := data.NewWSD("wsd.dat")
 	e := echo.New()
-	e.Validator = middlewares.NewCustomValidator()
+	e.Validator = helpers.NewCustomValidator()
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
@@ -27,7 +26,7 @@ func main() {
 		e.DefaultHTTPErrorHandler(err, c)
 	}
 	api := e.Group("/api/v1")
-	userHandlers := users.NewUserHandlers(data)
+	userHandlers := handlers.NewUserHandlers(data)
 	userHandlers.SetupRoutes(api)
 
 	walletHandlers := handlers.NewWalletHandlers(data)
