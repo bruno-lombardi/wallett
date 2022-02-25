@@ -13,7 +13,14 @@ type CreateUserDTO struct {
 	Password             string `json:"password" validate:"required,max=64,min=6"`
 	PasswordConfirmation string `json:"password_confirmation" validate:"required,max=64,min=6,eqcsfield=Password"`
 }
-
+type UpdateUserDTO struct {
+	ID                      string `param:"id" validate:"required"`
+	Email                   string `json:"email" validate:"email,required"`
+	Name                    string `json:"name" validate:"required,max=100,min=2"`
+	CurrentPassword         string `json:"current_password" validate:"required,max=64,min=6"`
+	NewPassword             string `json:"new_password" validate:"required,max=64,min=6"`
+	NewPasswordConfirmation string `json:"new_password_confirmation" validate:"required,max=64,min=6,eqcsfield=NewPassword"`
+}
 type ListUsersDTO struct {
 	Page  int `query:"page" validate:"gte=1"`
 	Limit int `query:"limit" validate:"gte=1,lte=20"`

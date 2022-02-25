@@ -1,7 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
 	"wallett/data"
 	"wallett/main/handlers"
 	"wallett/presentation/helpers"
@@ -32,5 +37,18 @@ func main() {
 	walletHandlers := handlers.NewWalletHandlers(data)
 	walletHandlers.SetupHandlers(api)
 
-	e.Logger.Fatal(e.Start(":3333"))
+	go func() {
+		if err := e.Start(":3333"); err != nil && err != http.ErrServerClosed {
+			e.Logger.Fatal("shutting down the server")
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
 }
