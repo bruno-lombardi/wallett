@@ -2,9 +2,11 @@ package users
 
 import (
 	"fmt"
+	"net/http"
 	"wallett/data"
 	"wallett/domain/models"
 	"wallett/infra/generators"
+	"wallett/presentation/protocols"
 )
 
 type CreateUserFileSystemUseCase struct {
@@ -30,7 +32,9 @@ func (u *CreateUserFileSystemUseCase) Create(createUserDto *models.CreateUserDTO
 	*u.data.Users = append(*u.data.Users, *user)
 	var err error
 	if err = u.data.PersistWSD(); err != nil {
-		return nil, fmt.Errorf("could not save user data to file system: %v", err)
+		return nil, protocols.NewHttpError(
+			fmt.Sprintf("could not save user data to file system: %v", err),
+			http.StatusInternalServerError)
 	}
 
 	return user, nil

@@ -1,9 +1,10 @@
 package users
 
 import (
-	"errors"
+	"net/http"
 	"wallett/data"
 	"wallett/domain/models"
+	"wallett/presentation/protocols"
 )
 
 type GetUserByIDFileSystemUseCase struct {
@@ -26,7 +27,9 @@ func (u *GetUserByIDFileSystemUseCase) Get(ID string) (*models.User, error) {
 		}
 	}
 	if foundUser.ID == "" {
-		return nil, errors.New("an user with that ID was not found")
+		return nil, protocols.NewHttpError(
+			"an user with that ID was not found",
+			http.StatusNotFound)
 	}
 	return foundUser, nil
 }

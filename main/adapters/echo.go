@@ -37,7 +37,12 @@ func AdaptHandlerJSON(controller protocols.Controller, body interface{}) func(c 
 
 		response, err := controller.Handle(httpRequest)
 		if err != nil {
-			return echo.NewHTTPError(response.StatusCode, map[string]string{"message": err.Error()})
+			switch err := err.(type) {
+			case *protocols.HttpError:
+				return echo.NewHTTPError(err.StatusCode, map[string]string{"message": err.Error()})
+			default:
+				return echo.NewHTTPError(response.StatusCode, map[string]string{"message": err.Error()})
+			}
 		}
 
 		for k, v := range response.Headers {

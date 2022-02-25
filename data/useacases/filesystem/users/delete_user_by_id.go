@@ -1,10 +1,11 @@
 package users
 
 import (
-	"errors"
 	"fmt"
+	"net/http"
 	"wallett/data"
 	"wallett/domain/models"
+	"wallett/presentation/protocols"
 )
 
 type DeleteUserByIDFileSystemUseCase struct {
@@ -29,7 +30,9 @@ func (u *DeleteUserByIDFileSystemUseCase) Delete(ID string) error {
 		}
 	}
 	if foundUser.ID == "" {
-		return errors.New("an user with that ID was not found")
+		return protocols.NewHttpError(
+			"an user with that ID was not found",
+			http.StatusNotFound)
 	}
 
 	var users = *u.data.Users
@@ -37,7 +40,9 @@ func (u *DeleteUserByIDFileSystemUseCase) Delete(ID string) error {
 
 	var err error
 	if err = u.data.PersistWSD(); err != nil {
-		return fmt.Errorf("an error ocurred while deleting this user: %v", err)
+		return protocols.NewHttpError(
+			fmt.Sprintf("an error ocurred while deleting this user: %v", err),
+			http.StatusInternalServerError)
 	}
 
 	return nil

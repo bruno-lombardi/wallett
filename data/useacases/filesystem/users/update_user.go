@@ -1,9 +1,11 @@
 package users
 
 import (
-	"errors"
+	"fmt"
+	"net/http"
 	"wallett/data"
 	"wallett/domain/models"
+	"wallett/presentation/protocols"
 )
 
 type UpdateUserFileSystemUseCase struct {
@@ -29,11 +31,15 @@ func (u *UpdateUserFileSystemUseCase) Update(updateUserDto *models.UpdateUserDTO
 	}
 
 	if foundUser.ID == "" {
-		return nil, errors.New("an user with that id was not found")
+		return nil, protocols.NewHttpError(
+			"an user with that ID was not found",
+			http.StatusNotFound)
 	}
 
 	if foundUser.Password != updateUserDto.CurrentPassword {
-		return nil, errors.New("the password provided for this user is not valid")
+		return nil, protocols.NewHttpError(
+			"the password provided is not valid",
+			http.StatusBadRequest)
 	}
 
 	foundUser.Email = updateUserDto.Email
@@ -44,7 +50,9 @@ func (u *UpdateUserFileSystemUseCase) Update(updateUserDto *models.UpdateUserDTO
 
 	var err error
 	if err = u.data.PersistWSD(); err != nil {
-		return nil, errors.New("an error ocurred while saving this user")
+		return nil, protocols.NewHttpError(
+			fmt.Sprintf("an error ocurred while saving this user: %v", err),
+			http.StatusBadRequest)
 	}
 
 	return foundUser, nil

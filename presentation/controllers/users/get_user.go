@@ -28,7 +28,7 @@ func (c *GetUserController) Handle(req *protocols.HttpRequest) (*protocols.HttpR
 	}
 
 	response := &protocols.HttpResponse{
-		StatusCode: http.StatusCreated,
+		StatusCode: http.StatusOK,
 		Body:       user,
 	}
 
