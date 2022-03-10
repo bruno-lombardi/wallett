@@ -8,6 +8,14 @@ type Wallet struct {
 	Transactions []Transaction `json:"transactions"`
 }
 
+type CreateWalletDTO struct {
+	UserID       string `json:"user_id" validate:"required,max=32"`
+	CurrencyCode string `json:"currency_code" validate:"required,max=5,min=2"`
+}
+type ListWalletsDTO struct {
+	Page  int `query:"page" validate:"gte=1"`
+	Limit int `query:"limit" validate:"gte=1,lte=20"`
+}
 type PaginatedWalletResultDTO struct {
 	TotalPages int      `json:"total_pages"`
 	Count      int      `json:"count"`

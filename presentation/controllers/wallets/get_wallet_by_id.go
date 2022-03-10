@@ -1,42 +1,35 @@
 package wallets
 
 import (
-	"errors"
 	"net/http"
-	"wallett/data"
-	"wallett/domain/models"
+	"wallett/domain/usecases/wallets"
 	"wallett/presentation/protocols"
 )
 
 type GetWalletByIDController struct {
-	data *data.WSD
+	getWalletByIdUsecase *wallets.GetWalletByIDUsecase
 }
 
-func NewGetWalletByIDController(data *data.WSD) *GetWalletByIDController {
+func NewGetWalletByIDController(getWalletByIdUsecase wallets.GetWalletByIDUsecase) *GetWalletByIDController {
 	return &GetWalletByIDController{
-		data: data,
+		getWalletByIdUsecase: &getWalletByIdUsecase,
 	}
 }
 
 func (c *GetWalletByIDController) Handle(req *protocols.HttpRequest) (*protocols.HttpResponse, error) {
 	id := req.PathParams["id"]
 
-	foundWallet := &models.Wallet{}
-	for _, wallet := range *c.data.Wallets {
-		if wallet.ID == id {
-			foundWallet = &wallet
-			break
-		}
-	}
-	if foundWallet.ID == "" {
+	var err error
+	wallet, err := (*c.getWalletByIdUsecase).GetByID(id)
+	if err != nil {
 		return &protocols.HttpResponse{
-			StatusCode: http.StatusNotFound,
-		}, errors.New("a wallet with that id was not found")
+			StatusCode: http.StatusInternalServerError,
+		}, err
 	}
 
 	response := &protocols.HttpResponse{
 		StatusCode: http.StatusOK,
-		Body:       foundWallet,
+		Body:       wallet,
 	}
 
 	return response, nil

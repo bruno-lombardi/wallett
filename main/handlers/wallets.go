@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"wallett/data"
+	"wallett/data/useacases/filesystem/wallets"
+	"wallett/domain/models"
 	"wallett/main/adapters"
 	transactionsControllers "wallett/presentation/controllers/transactions"
 	walletsControllers "wallett/presentation/controllers/wallets"
@@ -21,9 +23,21 @@ func NewWalletHandlers(data *data.WSD) *WalletHandlers {
 }
 
 func (h *WalletHandlers) SetupHandlers(r *echo.Group) {
-	r.GET("/wallets", adapters.AdaptHandlerJSON(walletsControllers.NewListWalletsController(h.data), &walletsControllers.ListWalletsDTO{}))
-	r.GET("/wallets/:id", adapters.AdaptHandlerJSON(walletsControllers.NewGetWalletByIDController(h.data), nil))
-	r.POST("/wallets", adapters.AdaptHandlerJSON(walletsControllers.NewCreateWalletController(h.data), &walletsControllers.CreateWalletDTO{}))
+	createWalletFileSystemUsecase := wallets.NewCreateWalletFileSystemUseCase(h.data)
+	getWalletByIDFileSystemUsecase := wallets.NewGetWalletByIDFileSystemUseCase(h.data)
+	listWalletsFileSystemUsecase := wallets.NewListWalletsFileSystemUsecase(h.data)
+
+	r.GET("/wallets",
+		adapters.AdaptHandlerJSON(
+			walletsControllers.NewListWalletsController(listWalletsFileSystemUsecase),
+			&models.ListWalletsDTO{}))
+	r.GET("/wallets/:id",
+		adapters.AdaptHandlerJSON(
+			walletsControllers.NewGetWalletByIDController(getWalletByIDFileSystemUsecase), nil))
+	r.POST("/wallets",
+		adapters.AdaptHandlerJSON(
+			walletsControllers.NewCreateWalletController(createWalletFileSystemUsecase),
+			&models.CreateWalletDTO{}))
 	// r.PUT("/wallets/:id")
 	// r.DELETE("/wallets/:id")
 
