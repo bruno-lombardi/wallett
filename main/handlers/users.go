@@ -1,32 +1,34 @@
 package handlers
 
 import (
-	"wallett/data"
-	"wallett/data/useacases/filesystem/users"
+	"wallett/data/useacases/users"
 	"wallett/domain/models"
+	"wallett/infra/persistence/db/sqlite"
 	"wallett/main/adapters"
 	usersControllers "wallett/presentation/controllers/users"
 
 	"github.com/labstack/echo"
+	"gorm.io/gorm"
 )
 
 type UserHandlers struct {
-	data *data.WSD
+	db *gorm.DB
 }
 
-func NewUserHandlers(data *data.WSD) *UserHandlers {
+func NewUserHandlers(db *gorm.DB) *UserHandlers {
 	h := &UserHandlers{
-		data: data,
+		db: db,
 	}
 	return h
 }
 
 func (h *UserHandlers) SetupRoutes(r *echo.Group) {
-	createUserFileSystemUseCase := users.NewCreateUserFileSystemUseCase(h.data)
-	listUsersFileSystemUseCase := users.NewListUserFileSystemUseCase(h.data)
-	updateUserFileSystemUseCase := users.NewUpdateUserFileSystemUseCase(h.data)
-	getUserByIDUseCase := users.NewGetUserByIDFileSystemUseCase(h.data)
-	deleteUserByIDUseCase := users.NewDeleteUserByIDFileSystemUseCase(h.data)
+	usersRepository := sqlite.NewSQLiteUserRepository(h.db)
+	dbCreateUserUsecase := users.NewDbCreateUserUsecase(usersRepository)
+	listUsersFileSystemUseCase := users.NewDbListUserUseCase(usersRepository)
+	updateUserFileSystemUseCase := users.NewDbUpdateUserUseCase(usersRepository)
+	getUserByIDUseCase := users.NewDbGetUserByIDUsecase(usersRepository)
+	deleteUserByIDUseCase := users.NewDbDeleteUserByIDUseCase(usersRepository)
 
 	r.GET("/users", adapters.AdaptHandlerJSON(
 		usersControllers.NewListUsersController(listUsersFileSystemUseCase),
@@ -35,7 +37,7 @@ func (h *UserHandlers) SetupRoutes(r *echo.Group) {
 		usersControllers.NewGetUserController(getUserByIDUseCase),
 		nil))
 	r.POST("/users", adapters.AdaptHandlerJSON(
-		usersControllers.NewCreateUserController(createUserFileSystemUseCase),
+		usersControllers.NewCreateUserController(dbCreateUserUsecase),
 		&models.CreateUserDTO{}))
 
 	r.PUT("/users/:id", adapters.AdaptHandlerJSON(

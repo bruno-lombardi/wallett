@@ -9,8 +9,9 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"wallett/data"
 	"wallett/domain/models"
+	"wallett/infra/generators"
+	"wallett/infra/persistence/db/sqlite"
 	"wallett/presentation/helpers"
 	"wallett/test"
 
@@ -19,16 +20,26 @@ import (
 )
 
 var (
-	mockData *data.WSD
+	mockUsers *[]models.User
 )
 
 type HttpTestCase = test.HttpTestCase
+type User = models.User
 
 func TestMain(m *testing.M) {
 	// call flag.Parse() here if TestMain uses flags
-	mockData = data.NewWSD("test.dat")
+	sqlite.Connect("file::memory:?cache=shared")
+	sqlite.GetDB().AutoMigrate(&sqlite.SQLiteUser{})
+	mockUsers = &[]User{
+		{
+			ID:       generators.ID("u"),
+			Email:    fmt.Sprintf("%v@%v.com", generators.RandomString(30), generators.RandomString(10)),
+			Name:     "Bruno",
+			Password: generators.RandomString(12),
+		},
+	}
+
 	code := m.Run()
-	mockData.ClearWSD()
 
 	os.Exit(code)
 }
@@ -46,6 +57,8 @@ func TestUserHandlers(t *testing.T) {
 				"password_confirmation": "654321"
 			}`,
 			ExpectStatus: http.StatusCreated,
+			BeforeTest:   func() error { return nil },
+			AfterTest:    func() error { return nil },
 			ExpectBody: func(t *testing.T, body *bytes.Buffer) (err error) {
 				decodedUser := &models.User{}
 				err = json.Unmarshal(body.Bytes(), decodedUser)
@@ -68,6 +81,8 @@ func TestUserHandlers(t *testing.T) {
 				"password_confirmation": "654321"
 			}`,
 			ExpectStatus: http.StatusBadRequest,
+			BeforeTest:   func() error { return nil },
+			AfterTest:    func() error { return nil },
 			ExpectBody: func(t *testing.T, body *bytes.Buffer) (err error) {
 				var decodedResponse map[string]string
 				err = json.Unmarshal(body.Bytes(), &decodedResponse)
@@ -88,6 +103,8 @@ func TestUserHandlers(t *testing.T) {
 				"password_confirmation": "inval"
 			}`,
 			ExpectStatus: http.StatusBadRequest,
+			BeforeTest:   func() error { return nil },
+			AfterTest:    func() error { return nil },
 			ExpectBody: func(t *testing.T, body *bytes.Buffer) (err error) {
 				var decodedResponse map[string]string
 				err = json.Unmarshal(body.Bytes(), &decodedResponse)
@@ -108,6 +125,11 @@ func TestUserHandlers(t *testing.T) {
 				"password_confirmation": "123455"
 			}`,
 			ExpectStatus: http.StatusBadRequest,
+			BeforeTest:   func() error { return nil },
+			AfterTest: func() error {
+				sqlite.GetDB().Exec("DELETE FROM sq_lite_users").Commit()
+				return nil
+			},
 			ExpectBody: func(t *testing.T, body *bytes.Buffer) (err error) {
 				var decodedResponse map[string]string
 				err = json.Unmarshal(body.Bytes(), &decodedResponse)
@@ -119,20 +141,35 @@ func TestUserHandlers(t *testing.T) {
 		},
 		{
 			Name:         "Should return user if valid ID is given",
-			WhenURL:      fmt.Sprintf("/api/v1/users/%s", (*mockData.Users)[0].ID),
+			WhenURL:      fmt.Sprintf("/api/v1/users/%s", (*mockUsers)[0].ID),
 			WhenMethod:   http.MethodGet,
 			WhenBody:     "",
 			ExpectStatus: http.StatusOK,
+			BeforeTest: func() error {
+				user := (*mockUsers)[0]
+				result := sqlite.GetDB().Model(&sqlite.SQLiteUser{}).Create(&sqlite.SQLiteUser{
+					ID:       user.ID,
+					Email:    user.Email,
+					Name:     user.Name,
+					Password: user.Password,
+				})
+				return result.Error
+			},
 			ExpectBody: func(t *testing.T, body *bytes.Buffer) (err error) {
 				decodedUser := &models.User{}
 				err = json.Unmarshal(body.Bytes(), decodedUser)
 				assert.Nil(t, err)
 
-				assert.Equal(t, decodedUser.ID, (*mockData.Users)[0].ID)
+				assert.Equal(t, decodedUser.ID, (*mockUsers)[0].ID)
 				assert.NotEmpty(t, decodedUser.Email)
 				assert.NotEmpty(t, decodedUser.Name)
 				assert.Empty(t, decodedUser.Password)
 				return err
+			},
+			AfterTest: func() error {
+				user := (*mockUsers)[0]
+				result := sqlite.GetDB().Delete(&sqlite.SQLiteUser{ID: user.ID})
+				return result.Error
 			},
 		},
 		{
@@ -141,6 +178,8 @@ func TestUserHandlers(t *testing.T) {
 			WhenMethod:   http.MethodGet,
 			WhenBody:     "",
 			ExpectStatus: http.StatusNotFound,
+			BeforeTest:   func() error { return nil },
+			AfterTest:    func() error { return nil },
 			ExpectBody: func(t *testing.T, body *bytes.Buffer) (err error) {
 				var decodedResponse map[string]string
 				err = json.Unmarshal(body.Bytes(), &decodedResponse)
@@ -158,8 +197,10 @@ func TestUserHandlers(t *testing.T) {
 			e := echo.New()
 			e.Validator = helpers.NewCustomValidator()
 			api := e.Group("/api/v1")
-			h := NewUserHandlers(mockData)
+			h := NewUserHandlers(sqlite.GetDB())
 			h.SetupRoutes(api)
+
+			assert.NoError(t, testCase.BeforeTest())
 
 			req := httptest.NewRequest(testCase.WhenMethod, testCase.WhenURL, strings.NewReader(testCase.WhenBody))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -167,14 +208,10 @@ func TestUserHandlers(t *testing.T) {
 			e.ServeHTTP(rec, req)
 
 			body := rec.Body
+
 			assert.Equal(t, testCase.ExpectStatus, rec.Code)
 			assert.NoError(t, testCase.ExpectBody(t, body))
-
-			// Assertions
-			// if assert.NoError(t, h.CreateUser(c)) {
-			// 	assert.Equal(t, http.StatusCreated, rec.Code)
-
-			// }
+			assert.NoError(t, testCase.AfterTest())
 		})
 	}
 }

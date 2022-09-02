@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"time"
 	"wallett/data"
+	"wallett/infra/persistence/db/sqlite"
 	"wallett/main/handlers"
 	"wallett/presentation/helpers"
 
@@ -17,6 +18,8 @@ import (
 
 func main() {
 	data := data.NewWSD("wsd.dat")
+	sqlite.Connect("gorm.db")
+
 	e := echo.New()
 	e.Validator = helpers.NewCustomValidator()
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -25,13 +28,12 @@ func main() {
 	e.Use(middleware.RecoverWithConfig(middleware.RecoverConfig{
 		DisablePrintStack: true,
 	}))
-
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
 		fmt.Println(c.Path(), c.QueryParams(), err)
 		e.DefaultHTTPErrorHandler(err, c)
 	}
 	api := e.Group("/api/v1")
-	userHandlers := handlers.NewUserHandlers(data)
+	userHandlers := handlers.NewUserHandlers(sqlite.GetDB())
 	userHandlers.SetupRoutes(api)
 
 	walletHandlers := handlers.NewWalletHandlers(data)

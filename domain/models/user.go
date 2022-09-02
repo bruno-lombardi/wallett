@@ -28,7 +28,7 @@ type ListUsersDTO struct {
 
 type PaginatedUserResultDTO struct {
 	TotalPages int    `json:"total_pages"`
-	Count      int    `json:"count"`
+	Count      int64  `json:"count"`
 	PerPage    int    `json:"per_page"`
 	Page       int    `json:"page"`
 	Data       []User `json:"data"`

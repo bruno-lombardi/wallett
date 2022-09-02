@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"wallett/data"
-	"wallett/data/useacases/filesystem/wallets"
+	"wallett/data/useacases/wallets"
 	"wallett/domain/models"
 	"wallett/main/adapters"
 	transactionsControllers "wallett/presentation/controllers/transactions"

@@ -22,8 +22,25 @@ func (c *GetUserController) Handle(req *protocols.HttpRequest) (*protocols.HttpR
 	var err error
 	user, err := (*c.getUserByIDUsecase).Get(id)
 	if err != nil {
+		if err.Error() == "record not found" {
+			return &protocols.HttpResponse{
+				StatusCode: http.StatusNotFound,
+				Body: &map[string]string{
+					"message": "User not found",
+				},
+			}, err
+		}
 		return &protocols.HttpResponse{
 			StatusCode: http.StatusInternalServerError,
+		}, err
+	}
+
+	if user.ID == "" {
+		return &protocols.HttpResponse{
+			StatusCode: http.StatusNotFound,
+			Body: &map[string]string{
+				"message": "User not found",
+			},
 		}, err
 	}
 
