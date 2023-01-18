@@ -9,8 +9,8 @@ type Wallet struct {
 }
 type AddTransactionDTO struct {
 	WalletID     string  `json:"wallet_id"`
-	Amount       float32 `json:"amount"`
-	CurrencyCode string  `json:"currency_code"`
+	Amount       float32 `json:"amount" validate:"required"`
+	CurrencyCode string  `json:"currency_code" validate:"required"`
 }
 type CreateWalletDTO struct {
 	UserID       string `json:"user_id" validate:"required,max=32"`

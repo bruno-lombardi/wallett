@@ -49,7 +49,7 @@ func (h *WalletHandlers) SetupHandlers(r *echo.Group) {
 	r.POST("/wallets/:wallet_id/transactions",
 		adapters.AdaptHandlerJSON(
 			transactionsControllers.NewAddTransactionController(dbAddTransactionToWalletUsecase),
-			&models.CreateWalletDTO{}))
+			&models.AddTransactionDTO{}))
 
 	// r.GET("/wallets/:wallet_id/transactions")
 	// r.GET("/wallets/:wallet_id/transactions/:trx_id")

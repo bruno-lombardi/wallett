@@ -111,25 +111,25 @@ func (r *SQLiteWalletRepository) List(listWalletsDTO *models.ListWalletsDTO) (*m
 
 func (r *SQLiteWalletRepository) AddTransaction(walletID string, addTransactionDTO models.AddTransactionDTO) (w *models.Wallet, err error) {
 	var wallet SQLiteWallet
-	result := r.db.Model(&SQLiteWallet{ID: walletID}).Find(&wallet)
-
+	result := r.db.Model(&SQLiteWallet{ID: walletID}).Preload("Transactions").Find(&wallet)
 	if result.Error != nil {
 		return nil, result.Error
-	} else {
-		err = db.Model(&wallet).Association("Transactions").Append(&SQLiteTransaction{
-			ID:              generators.ID("trx"),
-			WalletID:        walletID,
-			Amount:          addTransactionDTO.Amount,
-			PreviousBalance: wallet.Balance,
-			CurrencyCode:    addTransactionDTO.CurrencyCode,
-		})
-		if err != nil {
-			return nil, err
-		}
-		wallet.CalculateTotalBalance()
-		r.db.Save(&wallet)
-		return r.mapSQLiteWalletToWallet(wallet), nil
 	}
+
+	err = db.Model(&wallet).Association("Transactions").Append(&SQLiteTransaction{
+		ID:              generators.ID("trx"),
+		WalletID:        walletID,
+		Amount:          addTransactionDTO.Amount,
+		PreviousBalance: wallet.Balance,
+		CurrencyCode:    addTransactionDTO.CurrencyCode,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	wallet.CalculateTotalBalance()
+	r.db.Save(&wallet)
+	return r.mapSQLiteWalletToWallet(wallet), nil
 }
 
 func (r *SQLiteWalletRepository) Delete(ID string) error {
