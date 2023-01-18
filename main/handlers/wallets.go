@@ -1,54 +1,61 @@
 package handlers
 
 import (
-	"wallett/data"
 	"wallett/data/useacases/wallets"
+	"wallett/data/useacases/wallets/transactions"
 	"wallett/domain/models"
+	"wallett/infra/persistence/db/sqlite"
 	"wallett/main/adapters"
-	transactionsControllers "wallett/presentation/controllers/transactions"
 	walletsControllers "wallett/presentation/controllers/wallets"
+	transactionsControllers "wallett/presentation/controllers/wallets/transactions"
 
 	"github.com/labstack/echo"
+	"gorm.io/gorm"
 )
 
 type WalletHandlers struct {
-	data *data.WSD
+	db *gorm.DB
 }
 
-func NewWalletHandlers(data *data.WSD) *WalletHandlers {
+func NewWalletHandlers(db *gorm.DB) *WalletHandlers {
 	h := &WalletHandlers{
-		data: data,
+		db: db,
 	}
 	return h
 }
 
 func (h *WalletHandlers) SetupHandlers(r *echo.Group) {
-	createWalletFileSystemUsecase := wallets.NewCreateWalletFileSystemUseCase(h.data)
-	getWalletByIDFileSystemUsecase := wallets.NewGetWalletByIDFileSystemUseCase(h.data)
-	listWalletsFileSystemUsecase := wallets.NewListWalletsFileSystemUsecase(h.data)
+	walletsRepository := sqlite.NewSQLiteWalletRepository(h.db)
+
+	dbCreateWalletUsecase := wallets.NewDbCreateWalletUseCase(walletsRepository)
+	dbGetWalletByIDUsecase := wallets.NewDbGetWalletByIUseCase(walletsRepository)
+	dbListWalletsUsecase := wallets.NewDbListWalletsUsecase(walletsRepository)
+	dbAddTransactionToWalletUsecase := transactions.NewDbAddTransactionToWalletUsecase(walletsRepository)
 
 	r.GET("/wallets",
 		adapters.AdaptHandlerJSON(
-			walletsControllers.NewListWalletsController(listWalletsFileSystemUsecase),
+			walletsControllers.NewListWalletsController(dbListWalletsUsecase),
 			&models.ListWalletsDTO{}))
 	r.GET("/wallets/:id",
 		adapters.AdaptHandlerJSON(
-			walletsControllers.NewGetWalletByIDController(getWalletByIDFileSystemUsecase), nil))
+			walletsControllers.NewGetWalletByIDController(dbGetWalletByIDUsecase), nil))
 	r.POST("/wallets",
 		adapters.AdaptHandlerJSON(
-			walletsControllers.NewCreateWalletController(createWalletFileSystemUsecase),
+			walletsControllers.NewCreateWalletController(dbCreateWalletUsecase),
 			&models.CreateWalletDTO{}))
 	// r.PUT("/wallets/:id")
 	// r.DELETE("/wallets/:id")
 
-	// r.GET("/wallets/:wallet_id/transactions")
-	// r.GET("/wallets/:wallet_id/transactions/:trx_id")
 	r.POST("/wallets/:wallet_id/transactions",
 		adapters.AdaptHandlerJSON(
-			transactionsControllers.NewCreateWalletController(h.data),
-			&transactionsControllers.CreateTransactionDTO{}))
+			transactionsControllers.NewAddTransactionController(dbAddTransactionToWalletUsecase),
+			&models.CreateWalletDTO{}))
+
+	// r.GET("/wallets/:wallet_id/transactions")
+	// r.GET("/wallets/:wallet_id/transactions/:trx_id")
+
 	// r.PUT("/wallets/:wallet_id/transactions/:trx_id")
-	r.DELETE("/wallets/:wallet_id/transactions/:trx_id",
-		adapters.AdaptHandlerJSON(
-			transactionsControllers.NewDeleteTransactionController(h.data), nil))
+	// r.DELETE("/wallets/:wallet_id/transactions/:trx_id",
+	// 	adapters.AdaptHandlerJSON(
+	// 		transactionsControllers.NewDeleteTransactionController(h.data), nil))
 }

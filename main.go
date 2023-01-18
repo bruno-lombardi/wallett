@@ -7,7 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"time"
-	"wallett/data"
+
+	// "wallett/data"
 	"wallett/infra/persistence/db/sqlite"
 	"wallett/main/handlers"
 	"wallett/presentation/helpers"
@@ -17,7 +18,7 @@ import (
 )
 
 func main() {
-	data := data.NewWSD("wsd.dat")
+	// data := data.NewWSD("wsd.dat")
 	sqlite.Connect("gorm.db")
 
 	e := echo.New()
@@ -36,7 +37,7 @@ func main() {
 	userHandlers := handlers.NewUserHandlers(sqlite.GetDB())
 	userHandlers.SetupRoutes(api)
 
-	walletHandlers := handlers.NewWalletHandlers(data)
+	walletHandlers := handlers.NewWalletHandlers(sqlite.GetDB())
 	walletHandlers.SetupHandlers(api)
 
 	go func() {

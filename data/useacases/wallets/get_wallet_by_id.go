@@ -1,34 +1,22 @@
 package wallets
 
 import (
-	"net/http"
-	"wallett/data"
+	"wallett/data/protocols/repositories"
 	"wallett/domain/models"
-	"wallett/presentation/protocols"
 )
 
-type GetWalletByIDFileSystemUsecase struct {
-	data *data.WSD
+type DbGetWalletByIDUsecase struct {
+	walletRepository *repositories.WalletRepository
 }
 
-func NewGetWalletByIDFileSystemUseCase(data *data.WSD) *GetWalletByIDFileSystemUsecase {
-	u := &GetWalletByIDFileSystemUsecase{
-		data: data,
+func NewDbGetWalletByIUseCase(walletRepository repositories.WalletRepository) *DbGetWalletByIDUsecase {
+	u := &DbGetWalletByIDUsecase{
+		walletRepository: &walletRepository,
 	}
 	return u
 }
 
-func (u *GetWalletByIDFileSystemUsecase) GetByID(id string) (*models.Wallet, error) {
-	foundWallet := &models.Wallet{}
-	for _, wallet := range *u.data.Wallets {
-		if wallet.ID == id {
-			foundWallet = &wallet
-			break
-		}
-	}
-	if foundWallet.ID == "" {
-		return nil, protocols.NewHttpError("a wallet with that id was not found", http.StatusNotFound)
-	}
-
-	return foundWallet, nil
+func (u *DbGetWalletByIDUsecase) GetByID(id string) (wallet *models.Wallet, err error) {
+	wallet, err = (*u.walletRepository).Get(id)
+	return wallet, err
 }

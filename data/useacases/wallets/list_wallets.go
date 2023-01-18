@@ -1,44 +1,22 @@
 package wallets
 
 import (
-	"wallett/data"
+	"wallett/data/protocols/repositories"
 	"wallett/domain/models"
 )
 
-type ListWalletsFileSystemUsecase struct {
-	data *data.WSD
+type DbListWalletsUsecase struct {
+	walletRepository *repositories.WalletRepository
 }
 
-func NewListWalletsFileSystemUsecase(data *data.WSD) *ListWalletsFileSystemUsecase {
-	u := &ListWalletsFileSystemUsecase{
-		data: data,
+func NewDbListWalletsUsecase(walletRepository repositories.WalletRepository) *DbListWalletsUsecase {
+	u := &DbListWalletsUsecase{
+		walletRepository: &walletRepository,
 	}
 	return u
 }
 
-func (u *ListWalletsFileSystemUsecase) List(listWalletsDto *models.ListWalletsDTO) (*models.PaginatedWalletResultDTO, error) {
-	sliceSize := len(*u.data.Wallets) / listWalletsDto.Limit
-	walletsSlices := make([][]models.Wallet, sliceSize)
-
-	for i := 0; i < sliceSize; i++ {
-		walletsSlices[i] = make([]models.Wallet, listWalletsDto.Limit)
-
-		for j := i * listWalletsDto.Limit; j < (i*listWalletsDto.Limit)+listWalletsDto.Limit; j++ {
-			innerSliceIdx := j - (i * listWalletsDto.Limit)
-			walletsSlices[i][innerSliceIdx] = (*u.data.Wallets)[j]
-		}
-	}
-	var data []models.Wallet = []models.Wallet{}
-	if listWalletsDto.Page <= len(walletsSlices) {
-		data = walletsSlices[listWalletsDto.Page-1]
-	}
-
-	paginateResult := &models.PaginatedWalletResultDTO{
-		TotalPages: sliceSize,
-		PerPage:    listWalletsDto.Limit,
-		Page:       listWalletsDto.Page,
-		Count:      len(*u.data.Wallets),
-		Data:       data,
-	}
-	return paginateResult, nil
+func (u *DbListWalletsUsecase) List(listWalletsDTO *models.ListWalletsDTO) (wallets *models.PaginatedWalletResultDTO, err error) {
+	wallets, err = (*u.walletRepository).List(listWalletsDTO)
+	return wallets, err
 }
